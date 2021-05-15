@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "318132740079",
+    "project_id": "location-sharing-app-27309",
+    "storage_bucket": "location-sharing-app-27309.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:318132740079:android:c2944c808f3f07e836601a",
+        "android_client_info": {
+          "package_name": "com.decagon.android.sq007"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "318132740079-3bpahbeek6bqnkd35qfbvog7dg0r9pi3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCR9QxuZ-Y6GDVHiTDMTNyvGXEASvOxff4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "318132740079-3bpahbeek6bqnkd35qfbvog7dg0r9pi3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

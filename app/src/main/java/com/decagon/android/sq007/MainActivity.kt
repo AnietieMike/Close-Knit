@@ -8,4 +8,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
     }
+
+//    var userLocation = MyLocation(location.latitude!!, location.longitude!!)
+//  dbReference.child("Anietie").setValue(userLocation)
 }
