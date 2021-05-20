@@ -98,11 +98,6 @@ class TrackerActivity : AppCompatActivity(), OnMapReadyCallback {
                     myMarker2?.position = user
 //                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(user, 19F))
 
-//                    Toast.makeText(
-//                        applicationContext,
-//                        "Location accessed from database",
-//                        Toast.LENGTH_LONG
-//                    ).show()
                 }
             }
         }
@@ -179,20 +174,14 @@ class TrackerActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         accessLocationServices()
         mMap = googleMap
+        // Initialise marker with default values
         myMarker2 = mMap.addMarker(MarkerOptions().position(LatLng(6.4741107,3.6304405)).title("Michael"))
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }
         mMap.isMyLocationEnabled = true
-//        mMap.uiSettings.isMyLocationButtonEnabled = true
     }
 
 }
