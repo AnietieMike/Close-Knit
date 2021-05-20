@@ -1,111 +1,51 @@
 package com.decagon.android.sq007
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.*
 
 
-class TrackerActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
+//
 
-    private val MIN_TIME: Long = 1000
-    private val MIN_DISTANCE: Float = 1F
+class TrackerActivity : AppCompatActivity(), OnMapReadyCallback {
+
     private val REQUEST_PERMISSION_LOCATION = 120
 
     private lateinit var mMap: GoogleMap
-    private lateinit var myMarker: Marker
-    private lateinit var dbReference: DatabaseReference
-    private lateinit var manager: LocationManager
+    var myMarker: Marker? = null
+    var myMarker2: Marker? = null
+    lateinit var dbReference: DatabaseReference
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationRequest: LocationRequest
+    private lateinit var locationCallback: LocationCallback
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_tracker)
-
-        dbReference = FirebaseDatabase.getInstance().reference.child("Anietie")
-
-        manager = getSystemService(LOCATION_SERVICE) as LocationManager
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
-
-        getLocationUpdates()
-        readLocationChanges()
-    }
-
-    private fun readLocationChanges() {
-        dbReference.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    try {
-                        val location = dataSnapshot.getValue(MyLocation::class.java)
-                        if (location != null) {
-                            myMarker.position = LatLng(location.latitude, location.longitude)
-
-
-//                            var userLocation = MyLocation()
-//                            dbReference.child("Anietie").setValue()
-                        }
-                    } catch (e: Exception) {
-                        Toast.makeText(this@TrackerActivity, e.message, Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {}
-        })
-    }
-
-    private fun getLocationUpdates() {
-        if (manager != null) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    &&
-                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-                when {
-                    manager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> {
-                        manager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            MIN_TIME,
-                            MIN_DISTANCE,
-                            this
-                        )
-                    }
-                    manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> {
-                        manager.requestLocationUpdates(
-                            LocationManager.NETWORK_PROVIDER,
-                            MIN_TIME,
-                            MIN_DISTANCE,
-                            this
-                        )
-                    }
-                    else -> {
-                        Toast.makeText(this, "No provider currently enabled", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }
-
-            } else {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                    REQUEST_PERMISSION_LOCATION
-                )
-            }
+    private fun accessLocationServices() {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+//            mMap.isMyLocationEnabled = true
+            getLocationUpdates()
+            readLocationChanges()
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_PERMISSION_LOCATION
+            )
         }
     }
 
@@ -114,47 +54,145 @@ class TrackerActivity : AppCompatActivity(), OnMapReadyCallback, LocationListene
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == REQUEST_PERMISSION_LOCATION) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                getLocationUpdates()
+                accessLocationServices()
             } else {
-                Toast.makeText(this, "Permission required", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Access Location permission required", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_tracker)
 
-        // Add a marker in Sydney and move the camera
-        val sydney = LatLng(6.60, 3.50)
-        myMarker = mMap.addMarker(MarkerOptions().position(sydney).title("Anietie"))
-//        mMap.uiSettings.isZoomControlsEnabled
-//        mMap.uiSettings.setAllGesturesEnabled(true)
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(20f), 2000, null)
+        dbReference = FirebaseDatabase.getInstance().reference
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        dbReference.addValueEventListener(locationLogging)
+
     }
 
-    override fun onLocationChanged(location: Location) {
-        if (location != null) {
-            saveLocation(location)
-        } else {
-            Toast.makeText(this, "Couldn't find a location", Toast.LENGTH_LONG).show()
+    private val locationLogging = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            if (snapshot.exists()) {
+                val userLocation = snapshot.child("Michael").getValue(UserLocation::class.java)
+                var userLat = userLocation?.latitude
+                var userLong = userLocation?.longitude
+
+                if (userLat != null && userLong != null) {
+                    val user = LatLng(userLat, userLong)
+
+//                    mMap.clear()
+//                    myMarker2 = mMap.addMarker(MarkerOptions().position(user).title("Michael"))
+                    Log.d("TAG", "onDataChange: $myMarker")
+//                    mMap.addMarker(myMarker)
+                    myMarker2?.position = user
+//                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(user, 19F))
+
+//                    Toast.makeText(
+//                        applicationContext,
+//                        "Location accessed from database",
+//                        Toast.LENGTH_LONG
+//                    ).show()
+                }
+            }
+        }
+
+    override fun onCancelled(error: DatabaseError) {
+            Toast.makeText(this@TrackerActivity, "Could not read from database", Toast.LENGTH_LONG)
+                .show()
+        }
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun readLocationChanges() {
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            null
+        )
+    }
+
+    private fun getLocationUpdates() {
+        locationRequest = LocationRequest()
+        locationRequest.interval = 3000
+        locationRequest.fastestInterval = 2000
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationUpdate: LocationResult?) {
+                if (locationUpdate?.locations!!.isNotEmpty()) {
+                    val location = locationUpdate?.lastLocation
+
+                    val myLocation = UserLocation(location.latitude, location.longitude)
+                    dbReference.child("Anietie").setValue(myLocation)
+                        .addOnSuccessListener {
+//                            Toast.makeText(applicationContext, "Locations written into the database", Toast.LENGTH_LONG).show()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(applicationContext, it.message, Toast.LENGTH_LONG).show()
+                        }
+
+                    if (location != null) {
+                        val latLng = LatLng(location.latitude, location.longitude)
+
+                        /*
+                        ** To create a marker to indicate a User on the map
+                         */
+                        val markerOptions = MarkerOptions()
+                        markerOptions.position(latLng)
+                        markerOptions.title("Anietie")
+                        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(
+                            BitmapDescriptorFactory.HUE_VIOLET))
+
+                        if(myMarker == null) { // Add marker and move camera on first time
+                            myMarker = mMap.addMarker(markerOptions)
+//                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20F))
+                        } else { // Update existing marker position and move camera if required
+                            myMarker!!.position = latLng
+//                          mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20F))
+                        }
+
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 19F))
+                    }
+
+                }
+            }
         }
     }
 
-    private fun saveLocation(location: Location) {
-        dbReference.setValue(location)
+
+    /**
+     * Manipulates the map once available.
+     * This callback is triggered when the map is ready to be used.
+     */
+    override fun onMapReady(googleMap: GoogleMap) {
+        accessLocationServices()
+        mMap = googleMap
+        myMarker2 = mMap.addMarker(MarkerOptions().position(LatLng(6.4741107,3.6304405)).title("Michael"))
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        mMap.isMyLocationEnabled = true
+//        mMap.uiSettings.isMyLocationButtonEnabled = true
     }
+
 }
