@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Decagon Android 007</string>
+    <string name="app_name">Location Tracker</string>
     <string name="title_activity_tracker">Map</string>
+    <string name="open_location_tracker">Open Location Tracker</string>
 </resources>
