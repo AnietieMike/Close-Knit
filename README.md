@@ -1,13 +1,7 @@
-# Problem Description
+# App Description
+This app let's you track the location of your friends and family in realtime
 
-## Track your partner(s).  
-
-### Implementation 1:
-
-You are to build a map application to show the exact position of your partner(s) in realtime. Showing your partners image as an indicator, the indicator should move when your partner moves. 
-
-### Implementation 2:
-
-Recreate  the pokemon project using livedata and or rxjava. Also your project should react live to network change without closing or opening the app i.e if I turn off and turn it on back I shouldn’t have to click a button to refresh 
-
-
+## Technologies
+Retrofit2
+Google Maps Api
+Firebase Realtime Database
